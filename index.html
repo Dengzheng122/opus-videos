@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Awesome Opus 5.5 Videos · AI 代码生成视频合集</title>
+<style>
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#0b0e14;color:#e6e9ef}
+header{padding:28px 20px 10px;max-width:1200px;margin:0 auto}
+h1{font-size:26px;margin:0 0 6px}
+.sub{color:#9aa4b2;font-size:14px;line-height:1.6}
+.sub a{color:#6cb6ff}
+.bar{position:sticky;top:0;background:rgba(11,14,20,.92);backdrop-filter:blur(6px);padding:12px 20px;z-index:5;border-bottom:1px solid #1c2330}
+.bar-in{max-width:1200px;margin:0 auto;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+input[type=search]{flex:1;min-width:180px;padding:9px 12px;border-radius:8px;border:1px solid #2a3342;background:#121722;color:#e6e9ef;font-size:14px}
+.chip{padding:7px 13px;border-radius:999px;border:1px solid #2a3342;background:#121722;color:#c6cdd8;cursor:pointer;font-size:13px}
+.chip.on{background:#1f6feb;border-color:#1f6feb;color:#fff}
+main{max-width:1200px;margin:0 auto;padding:18px 20px 40px}
+#count{color:#9aa4b2;font-size:13px;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+.card{background:#121722;border:1px solid #1c2330;border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+.card img{width:100%;aspect-ratio:16/10;object-fit:cover;background:#0d1017;display:block}
+.meta{padding:11px 12px;display:flex;flex-direction:column;gap:7px;flex:1}
+.author{font-weight:600;font-size:14px}
+.author a{color:#e6e9ef;text-decoration:none}
+.tags{display:flex;gap:6px;flex-wrap:wrap}
+.tag{font-size:11px;color:#9aa4b2;border:1px solid #2a3342;padding:2px 7px;border-radius:999px}
+.tag.cat{color:#ffb86b;border-color:#4a3517}
+.btns{margin-top:auto;display:flex;gap:8px}
+.btn{flex:1;text-align:center;padding:8px 4px;border-radius:8px;font-size:13px;text-decoration:none;cursor:pointer;border:1px solid #2a3342;color:#c6cdd8;background:#0d1017}
+.btn.primary{background:#1f6feb;border-color:#1f6feb;color:#fff}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;padding:18px;z-index:20}
+#modal.open{display:flex}
+.box{background:#121722;border:1px solid #2a3342;border-radius:14px;max-width:680px;width:100%;max-height:84vh;overflow:auto;padding:20px}
+.box h3{margin:0 0 4px;font-size:16px}
+.box .who{color:#9aa4b2;font-size:13px;margin-bottom:12px}
+.box pre{white-space:pre-wrap;word-break:break-word;background:#0d1017;border:1px solid #1c2330;border-radius:10px;padding:14px;font-size:13px;line-height:1.7}
+.box .row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+footer{max-width:1200px;margin:0 auto;padding:0 20px 34px;color:#66707e;font-size:12px;line-height:1.7}
+</style>
+</head>
+<body>
+<header>
+<h1>&#127916; Awesome Opus 5.5 Videos</h1>
+<div class="sub">703 个由 Claude Opus 5.5 用代码（HTML / Canvas / SVG / Three.js）生成的病毒视频合集，每个都附原作者与完整 Prompt。点「重制版」可看 Skillry 上的实时复刻演示。本页为 GitHub 仓库 <a href="https://github.com/yihui-dev/awesome-opus5-5-videos" target="_blank" rel="noopener">yihui-dev/awesome-opus5-5-videos</a> 的镜像展示页。</div>
+</header>
+<div class="bar"><div class="bar-in">
+<input type="search" id="q" placeholder="搜索作者 / 标签 / Prompt 关键词…">
+<span id="chips"></span>
+</div></div>
+<main>
+<div id="count">加载中…</div>
+<div class="grid" id="grid"></div>
+</main>
+<footer>数据来源：仓库 data/videos.json（MIT）。视频版权归原作者所有，本页仅做索引展示。</footer>
+<div id="modal"><div class="box">
+<h3>Prompt</h3>
+<div class="who" id="m-who"></div>
+<pre id="m-body"></pre>
+<div class="row">
+<button class="btn primary" id="m-copy">复制 Prompt</button>
+<a class="btn" id="m-skillry" target="_blank" rel="noopener">在线重制版</a>
+<a class="btn" id="m-post" target="_blank" rel="noopener">原帖</a>
+<button class="btn" id="m-close">关闭</button>
+</div>
+</div></div>
+<script>
+const CATS={all:'全部',motion:'动态图形',explainer:'解说','3d':'3D 场景',interactive:'游戏互动'};
+let DATA=[],cat='all',kw='';
+const grid=document.getElementById('grid'),countEl=document.getElementById('count'),chips=document.getElementById('chips');
+Object.keys(CATS).forEach(k=>{const b=document.createElement('button');b.className='chip'+(k==='all'?' on':'');b.textContent=CATS[k];b.onclick=()=>{cat=k;document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));b.classList.add('on');render()};chips.appendChild(b)});
+document.getElementById('q').addEventListener('input',e=>{kw=e.target.value.trim().toLowerCase();render()});
+function esc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function render(){
+ const list=DATA.filter(v=>(cat==='all'||v.category===cat)&&(!kw||(v.author+' '+(v.tech_tags||[]).join(' ')+' '+(v.prompt||'')).toLowerCase().includes(kw)));
+ countEl.textContent='共 '+list.length+' 个视频';
+ grid.innerHTML=list.map(v=>'<div class="card"><img loading="lazy" src="'+esc(v.poster_url)+'" alt=""><div class="meta"><div class="author"><a href="'+esc(v.author_url)+'" target="_blank" rel="noopener">@'+esc(v.author)+'</a></div><div class="tags"><span class="tag cat">'+esc(CATS[v.category]||v.category)+'</span>'+(v.tech_tags||[]).map(t=>'<span class="tag">'+esc(t)+'</span>').join('')+'</div><div class="btns"><a class="btn primary" href="'+esc(v.skillry_url)+'" target="_blank" rel="noopener">&#9654; 重制版</a><button class="btn" data-p="'+esc(v.slug)+'">看 Prompt</button></div></div></div>').join('');
+ grid.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>openPrompt(b.getAttribute('data-p')));
+}
+const modal=document.getElementById('modal');
+function openPrompt(slug){
+ const v=DATA.find(x=>x.slug===slug);if(!v)return;
+ document.getElementById('m-who').textContent='@'+v.author+' · '+(CATS[v.category]||v.category)+' · '+(v.tech_tags||[]).join(' / ');
+ document.getElementById('m-body').textContent=v.prompt||'(未公开完整 Prompt)';
+ document.getElementById('m-skillry').href=v.skillry_url;
+ document.getElementById('m-post').href=v.post_url;
+ const cp=document.getElementById('m-copy');
+ cp.onclick=()=>{navigator.clipboard.writeText(v.prompt||'');cp.textContent='已复制';setTimeout(()=>cp.textContent='复制 Prompt',1200)};
+ modal.classList.add('open');
+}
+document.getElementById('m-close').onclick=()=>modal.classList.remove('open');
+modal.addEventListener('click',e=>{if(e.target===modal)modal.classList.remove('open')});
+fetch('data/videos.json').then(r=>r.json()).then(d=>{DATA=d;render()}).catch(e=>{countEl.textContent='数据加载失败：'+e.message});
+</script>
+</body>
+</html>
